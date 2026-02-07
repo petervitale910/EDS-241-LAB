@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.25">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="EDS 241 / ESM 244">
+<meta name="dcterms.date" content="2026-01-29">
+
+<title>Lab Week 4: Statistical Matching + Fixed Effects</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="week4_files/libs/clipboard/clipboard.min.js"></script>
+<script src="week4_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="week4_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="week4_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="week4_files/libs/quarto-html/popper.min.js"></script>
+<script src="week4_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="week4_files/libs/quarto-html/anchor.min.js"></script>
+<link href="week4_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="week4_files/libs/quarto-html/quarto-syntax-highlighting-7b89279ff1a6dce999919e0e67d4d9ec.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="week4_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="week4_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="week4_files/libs/bootstrap/bootstrap-aff6bd71cf38ce7a6494770b00151a6f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Lab Week 4: Statistical Matching + Fixed Effects</h1>
+<p class="subtitle lead">A replication of study analysis in Ahmadia (2015)</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>EDS 241 / ESM 244 </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 29, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<hr>
+<section id="lab-outline" class="level2">
+<h2 class="anchored" data-anchor-id="lab-outline">Lab Outline</h2>
+<ol start="0" type="1">
+<li>Load in the packages and data</li>
+<li>Take a look at focal variables</li>
+<li>Checking covariate imbalance (pre‑matching).</li>
+<li>Conduct a matching analysis (Mahalanobis matching)</li>
+<li>Evaluate balance after matching</li>
+<li>Estimate regression models for each outcome using the matched sample</li>
+<li>Practice fixed effects estimation</li>
+</ol>
+<hr>
+</section>
+<section id="applied-study-data-source" class="level2">
+<h2 class="anchored" data-anchor-id="applied-study-data-source">Applied study &amp; data source</h2>
+<p>This lab uses open-access replication data from:</p>
+<blockquote class="blockquote">
+<p>Ahmadia, G. N., Glew, L., Provost, M., Gill, D., Hidayat, N. I., Mangubhai, S., Purwanto, P., Fox, H. E. (2015). <em>Integrating impact evaluation in the design and implementation of monitoring marine protected areas</em>. Philosophical Transactions of the Royal Society B.</p>
+</blockquote>
+<p><strong>Big idea:</strong> MPAs are <em>not randomly placed</em>. They may be placed in “better” locations which means that treated and control groups are unlikely to make an <em>apples-to-apples</em> comparison. AKA, we are up against the nearly universal causal inference problem with non-experimental data, treatment assignment selection bias.</p>
+<p>Ahmadia et al.&nbsp;(2015) uses <strong>statistical matching</strong> to construct a more <em>apples-to-apples</em> comparison group. In this lab exercise we will approximately replicate the main matching analysis conducted in this study.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>NOTE: When matching, the authors imposed additional restrictions (caliper-style constraints) on some habitat variables. We <strong>do not</strong> fully replicate those constraints here.</p>
+</div>
+</div>
+<hr>
+<section id="reading-reference" class="level3">
+<h3 class="anchored" data-anchor-id="reading-reference">Reading reference:</h3>
+<blockquote class="blockquote">
+<p>MatchIt Vignette: <a href="https://kosukeimai.github.io/MatchIt/articles/MatchIt.html" class="uri">https://kosukeimai.github.io/MatchIt/articles/MatchIt.html</a></p>
+</blockquote>
+<hr>
+</section>
+</section>
+<section id="load-packages-study-data" class="level2">
+<h2 class="anchored" data-anchor-id="load-packages-study-data">0. Load packages + study data</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)   <span class="co"># data wrangling + plotting</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.6
+✔ forcats   1.0.0     ✔ stringr   1.6.0
+✔ ggplot2   4.0.1     ✔ tibble    3.3.1
+✔ lubridate 1.9.4     ✔ tidyr     1.3.2
+✔ purrr     1.2.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)        <span class="co"># portable file paths (project-root relative)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>here() starts at /Users/petervitale/Desktop/MEDS/EDS-241/EDS-241-LAB</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)     <span class="co"># clean variable names</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'janitor'
+
+The following objects are masked from 'package:stats':
+
+    chisq.test, fisher.test</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gtsummary)   <span class="co"># clean summary tables</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gt)          <span class="co"># optional: render gtsummary nicely</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MatchIt)     <span class="co"># matching estimation</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cobalt)      <span class="co"># balance checks + love plots</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code> cobalt (Version 4.6.1, Build Date: 2025-08-20)
+
+Attaching package: 'cobalt'
+
+The following object is masked from 'package:MatchIt':
+
+    lalonde</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(jtools)      <span class="co"># clean regression output summaries</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Read in the cleaned survey data</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>data_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"week4"</span>, <span class="st">"Ahmadia_2015_DataClean.csv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="create-variable-description-table-for-key-variables-in-the-matching-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="create-variable-description-table-for-key-variables-in-the-matching-analysis">1. Create variable description table for key variables in the matching analysis</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div id="mywghytvmz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mywghytvmz table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#mywghytvmz thead, #mywghytvmz tbody, #mywghytvmz tfoot, #mywghytvmz tr, #mywghytvmz td, #mywghytvmz th {
+  border-style: none;
+}
+
+#mywghytvmz p {
+  margin: 0;
+  padding: 0;
+}
+
+#mywghytvmz .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#mywghytvmz .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#mywghytvmz .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#mywghytvmz .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#mywghytvmz .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#mywghytvmz .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#mywghytvmz .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#mywghytvmz .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#mywghytvmz .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#mywghytvmz .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#mywghytvmz .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#mywghytvmz .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#mywghytvmz .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#mywghytvmz .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#mywghytvmz .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mywghytvmz .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#mywghytvmz .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#mywghytvmz .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#mywghytvmz .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mywghytvmz .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#mywghytvmz .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mywghytvmz .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#mywghytvmz .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mywghytvmz .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mywghytvmz .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mywghytvmz .gt_left {
+  text-align: left;
+}
+
+#mywghytvmz .gt_center {
+  text-align: center;
+}
+
+#mywghytvmz .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#mywghytvmz .gt_font_normal {
+  font-weight: normal;
+}
+
+#mywghytvmz .gt_font_bold {
+  font-weight: bold;
+}
+
+#mywghytvmz .gt_font_italic {
+  font-style: italic;
+}
+
+#mywghytvmz .gt_super {
+  font-size: 65%;
+}
+
+#mywghytvmz .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#mywghytvmz .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#mywghytvmz .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#mywghytvmz .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#mywghytvmz .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#mywghytvmz .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#mywghytvmz .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#mywghytvmz .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#mywghytvmz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading header">
+<td colspan="2" class="gt_heading gt_title gt_font_normal gt_bottom_border">Variable Descriptions (Treatment, Outcomes, Matching Covariates) - Ahmadia (2015)</td>
+</tr>
+<tr class="gt_col_headings even">
+<th id="Label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Label</th>
+<th id="Description" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Description</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">treated_mpa (Treatment)</td>
+<td class="gt_row gt_left" headers="Description">Site is inside a Marine Protected Area (1 = inside MPA , 0 = outside MPA).</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">biomass_fisheries (Outcome)</td>
+<td class="gt_row gt_left" headers="Description">Biomass of key fisheries families (Serranidae, Lutjanidae, Haemulidae) measured in kg per hectare (kg/ha).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">biomass_ecological (Outcome)</td>
+<td class="gt_row gt_left" headers="Description">Biomass of herbivorous fish families (Acanthuridae, Scaridae, Siganidae) measured in kg per hectare (kg/ha).</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">dist_deep_water (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Covariate: Distance to deep water (50 m depth contour), in meters (m).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">ssta_freq (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Frequency of sea-surface temperature anomalies (SSTA)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">reef_exposure (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Reef wave exposure (Exposed, Semi-exposed, Sheltered).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">reef_slope (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Reef slope (Flat, Slope, Wall)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">reef_type (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Reef type (Patch, Fringing, Barrier, Atoll).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">dist_mangroves (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Distance to nearest mangrove habitat, in meters (m).</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">dist_fishing_settlement (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Distance to nearest fishing settlement, in meters (m).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">dist_market (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Distance to primary market, in meters (m).</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Label">pollution_risk (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Watershed pollution risk. (1 = Low; 2 = Medium; 3 = High).</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Label">monsoon_direction (Covariate)</td>
+<td class="gt_row gt_left" headers="Description">Monsoon wind exposure direction. (Northwest (NW), Southeast (SE)).</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="check-imbalance-before-matching-covariate-balance-table" class="level2">
+<h2 class="anchored" data-anchor-id="check-imbalance-before-matching-covariate-balance-table">2. Check imbalance before matching (covariate balance table)</h2>
+<p><strong>Goal:</strong> Compare covariate distributions between <code>treated_mpa</code> and control sites <em>before</em> matching.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>data_clean <span class="sc">%&gt;%</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    treated_mpa, dist_to_deep_water, ssta_freq, reef_exposure,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    reef_slope, reef_type,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    dist_mangroves, dist_fish_settl, dist_market,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    pollution_risk, monsoon_direction) <span class="sc">%&gt;%</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tbl_summary</span>(</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> treated_mpa,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">statistic =</span> <span class="fu">list</span>(</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">all_continuous</span>() <span class="sc">~</span> <span class="st">"{mean} ({sd})"</span>,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">all_categorical</span>() <span class="sc">~</span> <span class="st">"{n} ({p}%)"</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">modify_header</span>(label <span class="sc">~</span> <span class="st">"**Covariate**"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">modify_spanning_header</span>(<span class="fu">c</span>(<span class="st">"stat_1"</span>, <span class="st">"stat_2"</span>) <span class="sc">~</span> <span class="st">"**Group**"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="lhzwovvtbi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#lhzwovvtbi table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#lhzwovvtbi thead, #lhzwovvtbi tbody, #lhzwovvtbi tfoot, #lhzwovvtbi tr, #lhzwovvtbi td, #lhzwovvtbi th {
+  border-style: none;
+}
+
+#lhzwovvtbi p {
+  margin: 0;
+  padding: 0;
+}
+
+#lhzwovvtbi .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#lhzwovvtbi .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#lhzwovvtbi .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#lhzwovvtbi .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#lhzwovvtbi .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#lhzwovvtbi .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#lhzwovvtbi .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#lhzwovvtbi .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#lhzwovvtbi .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#lhzwovvtbi .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#lhzwovvtbi .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#lhzwovvtbi .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#lhzwovvtbi .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#lhzwovvtbi .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#lhzwovvtbi .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lhzwovvtbi .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#lhzwovvtbi .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#lhzwovvtbi .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#lhzwovvtbi .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lhzwovvtbi .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#lhzwovvtbi .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lhzwovvtbi .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#lhzwovvtbi .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lhzwovvtbi .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#lhzwovvtbi .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#lhzwovvtbi .gt_left {
+  text-align: left;
+}
+
+#lhzwovvtbi .gt_center {
+  text-align: center;
+}
+
+#lhzwovvtbi .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#lhzwovvtbi .gt_font_normal {
+  font-weight: normal;
+}
+
+#lhzwovvtbi .gt_font_bold {
+  font-weight: bold;
+}
+
+#lhzwovvtbi .gt_font_italic {
+  font-style: italic;
+}
+
+#lhzwovvtbi .gt_super {
+  font-size: 65%;
+}
+
+#lhzwovvtbi .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#lhzwovvtbi .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#lhzwovvtbi .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#lhzwovvtbi .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#lhzwovvtbi .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#lhzwovvtbi .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#lhzwovvtbi .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#lhzwovvtbi .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#lhzwovvtbi div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="gt_col_headings gt_spanner_row header">
+<th rowspan="2" id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Covariate</strong></th>
+<th colspan="2" id="level 1; stat_1" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><div class="gt_column_spanner">
+<strong>Group</strong>
+</div></th>
+</tr>
+<tr class="gt_col_headings even">
+<th id="stat_1" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Control (non‑MPA)</strong><br>
+N = 53<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
+<th id="stat_2" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>MPA site</strong><br>
+N = 108<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">dist_to_deep_water</td>
+<td class="gt_row gt_center" headers="stat_1">656 (905)</td>
+<td class="gt_row gt_center" headers="stat_2">627 (913)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">ssta_freq</td>
+<td class="gt_row gt_center" headers="stat_1">25 (8)</td>
+<td class="gt_row gt_center" headers="stat_2">25 (5)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">reef_exposure</td>
+<td class="gt_row gt_center" headers="stat_1"><br>
+</td>
+<td class="gt_row gt_center" headers="stat_2"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Exposed</td>
+<td class="gt_row gt_center" headers="stat_1">35 (66%)</td>
+<td class="gt_row gt_center" headers="stat_2">92 (85%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Semi-exposed</td>
+<td class="gt_row gt_center" headers="stat_1">18 (34%)</td>
+<td class="gt_row gt_center" headers="stat_2">16 (15%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">reef_slope</td>
+<td class="gt_row gt_center" headers="stat_1"><br>
+</td>
+<td class="gt_row gt_center" headers="stat_2"><br>
+</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Flat</td>
+<td class="gt_row gt_center" headers="stat_1">7 (13%)</td>
+<td class="gt_row gt_center" headers="stat_2">10 (9.3%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Slope</td>
+<td class="gt_row gt_center" headers="stat_1">45 (85%)</td>
+<td class="gt_row gt_center" headers="stat_2">90 (83%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Wall</td>
+<td class="gt_row gt_center" headers="stat_1">1 (1.9%)</td>
+<td class="gt_row gt_center" headers="stat_2">8 (7.4%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">reef_type</td>
+<td class="gt_row gt_center" headers="stat_1"><br>
+</td>
+<td class="gt_row gt_center" headers="stat_2"><br>
+</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Barrier</td>
+<td class="gt_row gt_center" headers="stat_1">8 (15%)</td>
+<td class="gt_row gt_center" headers="stat_2">10 (9.3%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Fringing</td>
+<td class="gt_row gt_center" headers="stat_1">45 (85%)</td>
+<td class="gt_row gt_center" headers="stat_2">93 (86%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Patch</td>
+<td class="gt_row gt_center" headers="stat_1">0 (0%)</td>
+<td class="gt_row gt_center" headers="stat_2">5 (4.6%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">dist_mangroves</td>
+<td class="gt_row gt_center" headers="stat_1">9,679 (14,229)</td>
+<td class="gt_row gt_center" headers="stat_2">4,618 (5,165)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">dist_fish_settl</td>
+<td class="gt_row gt_center" headers="stat_1">25,646 (28,199)</td>
+<td class="gt_row gt_center" headers="stat_2">32,505 (31,537)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">dist_market</td>
+<td class="gt_row gt_center" headers="stat_1">124,152 (49,763)</td>
+<td class="gt_row gt_center" headers="stat_2">139,918 (66,406)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">pollution_risk</td>
+<td class="gt_row gt_center" headers="stat_1"><br>
+</td>
+<td class="gt_row gt_center" headers="stat_2"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;High</td>
+<td class="gt_row gt_center" headers="stat_1">0 (0%)</td>
+<td class="gt_row gt_center" headers="stat_2">1 (0.9%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Low</td>
+<td class="gt_row gt_center" headers="stat_1">33 (62%)</td>
+<td class="gt_row gt_center" headers="stat_2">84 (78%)</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;Medium</td>
+<td class="gt_row gt_center" headers="stat_1">20 (38%)</td>
+<td class="gt_row gt_center" headers="stat_2">23 (21%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">monsoon_direction</td>
+<td class="gt_row gt_center" headers="stat_1"><br>
+</td>
+<td class="gt_row gt_center" headers="stat_2"><br>
+</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;NW</td>
+<td class="gt_row gt_center" headers="stat_1">19 (36%)</td>
+<td class="gt_row gt_center" headers="stat_2">62 (57%)</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="label">&nbsp;&nbsp;&nbsp;&nbsp;SE</td>
+<td class="gt_row gt_center" headers="stat_1">34 (64%)</td>
+<td class="gt_row gt_center" headers="stat_2">46 (43%)</td>
+</tr>
+</tbody><tfoot>
+<tr class="gt_footnotes odd">
+<td colspan="3" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> Mean (SD); n (%)</td>
+</tr>
+</tfoot>
+
+</table>
+
+</div>
+</div>
+</div>
+<section id="your-turn-write-answers-in-the-lab" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn-write-answers-in-the-lab">✅ Your turn (write answers in the lab)</h3>
+<p><strong>Q1.</strong> Based on the balance table, name two covariates that look most different between MPA and non-MPA sites.</p>
+<p><em>Response:</em> Reef exposure and dist_fish_settl seem the most different.</p>
+<p><strong>Q2.</strong> Pick one of those imbalanced covariates and explain why it might confound the estimate of the effect of MPAs on fish biomass.</p>
+<p><em>Response:</em> Exposure could effect the biomass and artificially increase the amount of fish apparent in the MPA sites as there are more areas for them to seek refuge.</p>
+<hr>
+</section>
+</section>
+<section id="matching-plan-what-are-we-trying-to-estimate" class="level2">
+<h2 class="anchored" data-anchor-id="matching-plan-what-are-we-trying-to-estimate">Matching plan (what are we trying to estimate?)</h2>
+<p>In <code>{MatchIt}</code>, most distance-based matching procedures (like nearest-neighbor matching) target is to estimate:</p>
+<blockquote class="blockquote">
+<p><code>ATT</code>: Average Treatment effect on the Treated</p>
+</blockquote>
+<p>Why? When using matching methods we typically <strong>keep treated units</strong> and then select control units that most closely match them.</p>
+<section id="your-turn" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn">✅ Your turn</h3>
+<p><strong>Q4.</strong> What does <code>ATT</code> mean in the context of this MPA evaluation setting?</p>
+<p><em>Response:</em> The average treatment effect on MPA sites</p>
+<hr>
+</section>
+</section>
+<section id="mahalanobis-matching" class="level2">
+<h2 class="anchored" data-anchor-id="mahalanobis-matching">3. Mahalanobis Matching</h2>
+<p>Matching criteria used in Ahmadia (2015)</p>
+<ul>
+<li><code>method = "nearest-neighbor"</code>: Nearest neighbor matching</li>
+<li><code>distance = "mahalanobis"</code>: Mahalanobis distance</li>
+<li><code>ratio = 2</code>: Two controls matched to each treated unit (2:1 ratio; control/treated)</li>
+<li><code>replace = TRUE</code>: Controls can be reused (matched to multiple treated units)</li>
+</ul>
+<blockquote class="blockquote">
+<p>NOTE: This is the <em>main</em> matching method implemented in Ahmadia (2015) with the exception of the caliper-style constraints.</p>
+</blockquote>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1) Set a seed for reproducible matching</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2412026</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2) Fit a nearest-neighbor Mahalanobis matching model</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>match_model <span class="ot">&lt;-</span> <span class="fu">matchit</span>(</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a> treated_mpa <span class="sc">~</span> dist_to_deep_water <span class="sc">+</span> ssta_freq <span class="sc">+</span> reef_exposure <span class="sc">+</span> reef_slope <span class="sc">+</span> reef_type <span class="sc">+</span> dist_mangroves <span class="sc">+</span> dist_fish_settl <span class="sc">+</span> dist_market <span class="sc">+</span> pollution_risk <span class="sc">+</span> monsoon_direction,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a> <span class="at">data =</span> data_clean,</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"nearest"</span>,         </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">distance =</span> <span class="st">"mahalanobis"</span>,   </span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">ratio =</span> <span class="dv">2</span>,                  </span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">TRUE</span> )         </span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>match_model</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>A `matchit` object
+ - method: 2:1 nearest neighbor matching with replacement
+ - distance: Mahalanobis - number of obs.: 161 (original), 145 (matched)
+ - target estimand: ATT
+ - covariates: dist_to_deep_water, ssta_freq, reef_exposure, reef_slope, reef_type, dist_mangroves, dist_fish_settl, dist_market, pollution_risk, monsoon_direction</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract matched dataset</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>matched_data <span class="ot">&lt;-</span> <span class="fu">match.data</span>(match_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Inspect matching summary</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(match_model)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+matchit(formula = treated_mpa ~ dist_to_deep_water + ssta_freq + 
+    reef_exposure + reef_slope + reef_type + dist_mangroves + 
+    dist_fish_settl + dist_market + pollution_risk + monsoon_direction, 
+    data = data_clean, method = "nearest", distance = "mahalanobis", 
+    replace = TRUE, ratio = 2)
+
+Summary of Balance for All Data:
+                          Means Treated Means Control Std. Mean Diff.
+dist_to_deep_water             627.0960      655.7936         -0.0314
+ssta_freq                       25.4444       24.5094          0.1830
+reef_exposureExposed             0.8519        0.6604          0.5390
+reef_exposureSemi-exposed        0.1481        0.3396         -0.5390
+reef_slopeFlat                   0.0926        0.1321         -0.1362
+reef_slopeSlope                  0.8333        0.8491         -0.0422
+reef_slopeWall                   0.0741        0.0189          0.2108
+reef_typeBarrier                 0.0926        0.1509         -0.2013
+reef_typeFringing                0.8611        0.8491          0.0349
+reef_typePatch                   0.0463        0.0000          0.2203
+dist_mangroves                4618.4108     9679.3287         -0.9799
+dist_fish_settl              32505.0449    25646.2642          0.2175
+dist_market                 139918.0030   124152.3646          0.2374
+pollution_riskHigh               0.0093        0.0000          0.0967
+pollution_riskLow                0.7778        0.6226          0.3732
+pollution_riskMedium             0.2130        0.3774         -0.4016
+monsoon_directionNW              0.5741        0.3585          0.4360
+monsoon_directionSE              0.4259        0.6415         -0.4360
+                          Var. Ratio eCDF Mean eCDF Max
+dist_to_deep_water            1.0168    0.0271   0.0924
+ssta_freq                     0.4116    0.0749   0.1651
+reef_exposureExposed               .    0.1915   0.1915
+reef_exposureSemi-exposed          .    0.1915   0.1915
+reef_slopeFlat                     .    0.0395   0.0395
+reef_slopeSlope                    .    0.0157   0.0157
+reef_slopeWall                     .    0.0552   0.0552
+reef_typeBarrier                   .    0.0584   0.0584
+reef_typeFringing                  .    0.0121   0.0121
+reef_typePatch                     .    0.0463   0.0463
+dist_mangroves                0.1317    0.0755   0.1707
+dist_fish_settl               1.2507    0.0780   0.1988
+dist_market                   1.7808    0.1061   0.3515
+pollution_riskHigh                 .    0.0093   0.0093
+pollution_riskLow                  .    0.1551   0.1551
+pollution_riskMedium               .    0.1644   0.1644
+monsoon_directionNW                .    0.2156   0.2156
+monsoon_directionSE                .    0.2156   0.2156
+
+Summary of Balance for Matched Data:
+                          Means Treated Means Control Std. Mean Diff.
+dist_to_deep_water             627.0960      344.4758          0.3097
+ssta_freq                       25.4444       25.5370         -0.0181
+reef_exposureExposed             0.8519        0.8380          0.0391
+reef_exposureSemi-exposed        0.1481        0.1620         -0.0391
+reef_slopeFlat                   0.0926        0.0556          0.1278
+reef_slopeSlope                  0.8333        0.9120         -0.2112
+reef_slopeWall                   0.0741        0.0324          0.1591
+reef_typeBarrier                 0.0926        0.0880          0.0160
+reef_typeFringing                0.8611        0.9120         -0.1473
+reef_typePatch                   0.0463        0.0000          0.2203
+dist_mangroves                4618.4108     3903.1137          0.1385
+dist_fish_settl              32505.0449    23907.6888          0.2726
+dist_market                 139918.0030   138886.2537          0.0155
+pollution_riskHigh               0.0093        0.0000          0.0967
+pollution_riskLow                0.7778        0.7963         -0.0445
+pollution_riskMedium             0.2130        0.2037          0.0226
+monsoon_directionNW              0.5741        0.5093          0.1311
+monsoon_directionSE              0.4259        0.4907         -0.1311
+                          Var. Ratio eCDF Mean eCDF Max Std. Pair Dist.
+dist_to_deep_water            3.0661    0.1022   0.2176          0.6162
+ssta_freq                     1.4678    0.0244   0.0926          0.7032
+reef_exposureExposed               .    0.0139   0.0139          0.1434
+reef_exposureSemi-exposed          .    0.0139   0.0139          0.1434
+reef_slopeFlat                     .    0.0370   0.0370          0.1278
+reef_slopeSlope                    .    0.0787   0.0787          0.2112
+reef_slopeWall                     .    0.0417   0.0417          0.1591
+reef_typeBarrier                   .    0.0046   0.0046          0.0160
+reef_typeFringing                  .    0.0509   0.0509          0.1473
+reef_typePatch                     .    0.0463   0.0463          0.2203
+dist_mangroves                1.6708    0.0714   0.1759          0.7967
+dist_fish_settl               1.0892    0.1147   0.3056          0.6229
+dist_market                   2.0937    0.1334   0.3889          0.5956
+pollution_riskHigh                 .    0.0093   0.0093          0.0967
+pollution_riskLow                  .    0.0185   0.0185          0.0445
+pollution_riskMedium               .    0.0093   0.0093          0.0226
+monsoon_directionNW                .    0.0648   0.0648          0.2247
+monsoon_directionSE                .    0.0648   0.0648          0.2247
+
+Sample Sizes:
+              Control Treated
+All             53.       108
+Matched (ESS)   17.69     108
+Matched         37.       108
+Unmatched       16.         0
+Discarded        0.         0</code></pre>
+</div>
+</div>
+<section id="your-turn-1" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn-1">✅ Your turn</h3>
+<p><strong>Q5.</strong> Report how many treated units were matched and how many control sites were included in the matched data.</p>
+<p><em>Response:</em> 37 control units and 108 treated units were matched</p>
+<p><strong>Q6.</strong> Find the covariate with the largest standardized mean difference (SMD) <em>after matching</em>. Which covariate is it?</p>
+<p><em>Response:</em> Distance to deep water</p>
+<p>Visualize balance on the covariates using <code>plot()</code> with <code>type = "density"</code></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(match_model, <span class="at">type =</span> <span class="st">"density"</span>, <span class="at">interactive =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">which.xs =</span> <span class="sc">~</span>dist_to_deep_water <span class="sc">+</span> ssta_freq <span class="sc">+</span> reef_exposure)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="week4_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="evaluate-balance-after-matching-love-plot-balance-table" class="level2">
+<h2 class="anchored" data-anchor-id="evaluate-balance-after-matching-love-plot-balance-table">4. Evaluate balance after matching (love plot + balance table)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create nicer variable labels for plots/tables</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>nice_names <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">old =</span> <span class="fu">c</span>(</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"dist_to_deep_water"</span>, <span class="st">"ssta_freq"</span>, <span class="st">"reef_exposure"</span>, <span class="st">"reef_slope"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"reef_type"</span>, <span class="st">"dist_mangroves"</span>, <span class="st">"dist_fish_settl"</span>, <span class="st">"dist_market"</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"pollution_risk"</span>, <span class="st">"monsoon_direction"</span>),</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">new =</span> <span class="fu">c</span>(</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Distance to deep water"</span>, <span class="st">"SSTA frequency"</span>, <span class="st">"Reef exposure"</span>, <span class="st">"Reef slope"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Reef type"</span>, <span class="st">"Distance to mangroves (m)"</span>, <span class="st">"Distance to fishing settlement (m)"</span>,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Distance to market (m)"</span>, <span class="st">"Watershed pollution risk"</span>, <span class="st">"Monsoon direction (SE/NW)"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Create a <code>Love plot</code> to visualize standardized mean differences (before &amp; after matching)</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">love.plot</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  match_model,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">stats =</span> <span class="st">'mean.diffs'</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">thresholds =</span> <span class="fu">c</span>(<span class="at">m =</span> .<span class="dv">1</span>),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">var.names =</span> nice_names</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Standardized mean differences and raw mean differences are present in
+the same plot. Use the `stars` argument to distinguish between them and
+appropriately label the x-axis. See `?love.plot` for details.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="week4_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="estimate-differences-in-outcomes-using-the-matched-sample" class="level2">
+<h2 class="anchored" data-anchor-id="estimate-differences-in-outcomes-using-the-matched-sample">5. Estimate differences in outcomes using the matched sample</h2>
+<ul>
+<li>When matching <em>with replacement</em>, some control sites were matched multiple times and receive larger weights.<br>
+</li>
+<li>So we estimate outcome differences using the <code>weights</code> provided by <code>match.data()</code>.</li>
+</ul>
+<p>Regression (Outcome 1): Herbivorous fisheries families biomass</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>reg_ecological <span class="ot">&lt;-</span> <span class="fu">lm</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  biomass_ecological <span class="sc">~</span> treated_mpa,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> matched_data,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">weights =</span> weights)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summ</span>(reg_ecological, <span class="at">model.fit =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Observations</td>
+<td style="text-align: right;">145</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Dependent variable</td>
+<td style="text-align: right;">biomass_ecological</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Type</td>
+<td style="text-align: right;">OLS linear regression</td>
+</tr>
+</tbody>
+</table>
+</div>
+  
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Est.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">S.E.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">t val.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">(Intercept)</td>
+<td style="text-align: right;">290.77</td>
+<td style="text-align: right;">106.02</td>
+<td style="text-align: right;">2.74</td>
+<td style="text-align: right;">0.01</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">treated_mpaMPA site</td>
+<td style="text-align: right;">79.50</td>
+<td style="text-align: right;">122.84</td>
+<td style="text-align: right;">0.65</td>
+<td style="text-align: right;">0.52</td>
+</tr>
+</tbody><tfoot>
+<tr class="odd">
+<td style="text-align: left; padding: 0;"><sup></sup> Standard errors: OLS</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+</div>
+</div>
+<p>Regression (Outcome 2): Key fisheries families biomass</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>reg_fisheries <span class="ot">&lt;-</span> <span class="fu">lm</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  biomass_fisheries <span class="sc">~</span> treated_mpa,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> matched_data,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">weights =</span> weights)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summ</span>(reg_fisheries, <span class="at">model.fit =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Observations</td>
+<td style="text-align: right;">145</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Dependent variable</td>
+<td style="text-align: right;">biomass_fisheries</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Type</td>
+<td style="text-align: right;">OLS linear regression</td>
+</tr>
+</tbody>
+</table>
+</div>
+  
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Est.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">S.E.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">t val.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">(Intercept)</td>
+<td style="text-align: right;">64.23</td>
+<td style="text-align: right;">52.47</td>
+<td style="text-align: right;">1.22</td>
+<td style="text-align: right;">0.22</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">treated_mpaMPA site</td>
+<td style="text-align: right;">107.78</td>
+<td style="text-align: right;">60.79</td>
+<td style="text-align: right;">1.77</td>
+<td style="text-align: right;">0.08</td>
+</tr>
+</tbody><tfoot>
+<tr class="odd">
+<td style="text-align: left; padding: 0;"><sup></sup> Standard errors: OLS</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+</div>
+</div>
+<p>View biomass differences by treatment group as simple weighted mean comparisons:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>matched_data <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(treated_mpa) <span class="sc">%&gt;%</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_obs =</span> <span class="fu">n</span>(),</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">avg_biomass_ecological =</span> <span class="fu">weighted.mean</span>(biomass_ecological, <span class="at">w =</span> weights),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">avg_biomass_fisheries  =</span> <span class="fu">weighted.mean</span>(biomass_fisheries,  <span class="at">w =</span> weights),</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(<span class="at">title =</span> <span class="st">"Weighted mean outcomes in matched sample"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div id="moplxshcjp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#moplxshcjp table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#moplxshcjp thead, #moplxshcjp tbody, #moplxshcjp tfoot, #moplxshcjp tr, #moplxshcjp td, #moplxshcjp th {
+  border-style: none;
+}
+
+#moplxshcjp p {
+  margin: 0;
+  padding: 0;
+}
+
+#moplxshcjp .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#moplxshcjp .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#moplxshcjp .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#moplxshcjp .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#moplxshcjp .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#moplxshcjp .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#moplxshcjp .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#moplxshcjp .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#moplxshcjp .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#moplxshcjp .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#moplxshcjp .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#moplxshcjp .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#moplxshcjp .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#moplxshcjp .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#moplxshcjp .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moplxshcjp .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#moplxshcjp .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#moplxshcjp .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#moplxshcjp .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moplxshcjp .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#moplxshcjp .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moplxshcjp .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#moplxshcjp .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moplxshcjp .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#moplxshcjp .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#moplxshcjp .gt_left {
+  text-align: left;
+}
+
+#moplxshcjp .gt_center {
+  text-align: center;
+}
+
+#moplxshcjp .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#moplxshcjp .gt_font_normal {
+  font-weight: normal;
+}
+
+#moplxshcjp .gt_font_bold {
+  font-weight: bold;
+}
+
+#moplxshcjp .gt_font_italic {
+  font-style: italic;
+}
+
+#moplxshcjp .gt_super {
+  font-size: 65%;
+}
+
+#moplxshcjp .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#moplxshcjp .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#moplxshcjp .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#moplxshcjp .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#moplxshcjp .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#moplxshcjp .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#moplxshcjp .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#moplxshcjp .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#moplxshcjp div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading header">
+<td colspan="4" class="gt_heading gt_title gt_font_normal gt_bottom_border">Weighted mean outcomes in matched sample</td>
+</tr>
+<tr class="gt_col_headings even">
+<th id="treated_mpa" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">treated_mpa</th>
+<th id="n_obs" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">n_obs</th>
+<th id="avg_biomass_ecological" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">avg_biomass_ecological</th>
+<th id="avg_biomass_fisheries" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">avg_biomass_fisheries</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="treated_mpa">Control (non‑MPA)</td>
+<td class="gt_row gt_right" headers="n_obs">37</td>
+<td class="gt_row gt_right" headers="avg_biomass_ecological">290.7664</td>
+<td class="gt_row gt_right" headers="avg_biomass_fisheries">64.2348</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="treated_mpa">MPA site</td>
+<td class="gt_row gt_right" headers="n_obs">108</td>
+<td class="gt_row gt_right" headers="avg_biomass_ecological">370.2682</td>
+<td class="gt_row gt_right" headers="avg_biomass_fisheries">172.0131</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<section id="your-turn-2" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn-2">✅ Your turn</h3>
+<p><strong>Q7.</strong> Interpret one coefficient from the regressions above (choose ecological <em>or</em> fisheries). Write the interpretation of coefficient in plain language.</p>
+<p><em>Response:</em> The treatment is about 107.78 kg/ha more biomass than controls sites, and we expect to see these results with randomly generated data in only 8% of cases (statistical significance)</p>
+<p><strong>Q8.</strong> What is the biggest remaining threat to causal interpretation of regression coefficients after matching?</p>
+<p><em>Response:</em> Confounding variables that <em>weren’t</em> sampled remain as a threat to the causal interpretation of regression coefficients after matching.</p>
+<hr>
+</section>
+</section>
+<section id="fixed-effects-estimation---an-applied-example" class="level2">
+<h2 class="anchored" data-anchor-id="fixed-effects-estimation---an-applied-example">6. Fixed Effects Estimation - An Applied Example</h2>
+<p><strong>Replication of fixed effects estimator from applied study:</strong></p>
+<p>Dudney, J., Willing, C. E., Das, A. J., Latimer, A. M., Nesmith, J. C., &amp; Battles, J. J. (2021). <em>Nonlinear shifts in infectious rust disease due to climate change.</em> Nature communications, 12(1), 5102.</p>
+<div class="callout callout-style-simple callout-none no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<blockquote class="blockquote">
+<p>In this section we will look at a simple fixed effects (FE) example using panel-style data, where the same units (plots) are observed over multiple years (1995, 2016).</p>
+</blockquote>
+<blockquote class="blockquote">
+<p>The key issue: observations from the same plot are likely to share stable characteristics (soil type, microclimate, slope, management history) that we don’t measure well—and those unobserved factors can bias a naïve regression.</p>
+</blockquote>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="read-in-the-data-change-fixed-effext-to-factor-variables" class="level2">
+<h2 class="anchored" data-anchor-id="read-in-the-data-change-fixed-effext-to-factor-variables">Read in the data &amp; change fixed effext to <code>factor variables</code></h2>
+<blockquote class="blockquote">
+<p>By Coding <code>plot</code> and <code>year</code> as factors lets us include them as indicator (dummy) variables in an FE regression.</p>
+</blockquote>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>data_fe <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="fu">here</span>(<span class="st">"week4"</span>, <span class="st">"Dudney2021_study_data.csv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="estimate-a-no-fixed-effects-baseline-model" class="level2">
+<h2 class="anchored" data-anchor-id="estimate-a-no-fixed-effects-baseline-model">Estimate a “no fixed effects” baseline model</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>mod1_nofe <span class="ot">&lt;-</span> <span class="fu">lm</span>(perinc <span class="sc">~</span> vpd <span class="sc">+</span> <span class="fu">I</span>(vpd<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> dbh <span class="sc">+</span> density,</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">data =</span> data_fe)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summ</span>(mod1_nofe, <span class="at">model.fit =</span> <span class="cn">FALSE</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Observations</td>
+<td style="text-align: right;">294</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Dependent variable</td>
+<td style="text-align: right;">perinc</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Type</td>
+<td style="text-align: right;">OLS linear regression</td>
+</tr>
+</tbody>
+</table>
+</div>
+  
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Est.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">S.E.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">t val.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">(Intercept)</td>
+<td style="text-align: right;">-0.615</td>
+<td style="text-align: right;">0.122</td>
+<td style="text-align: right;">-5.027</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">vpd</td>
+<td style="text-align: right;">0.126</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">5.712</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">I(vpd^2)</td>
+<td style="text-align: right;">-0.005</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">-5.119</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">dbh</td>
+<td style="text-align: right;">-0.001</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">-2.499</td>
+<td style="text-align: right;">0.013</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">density</td>
+<td style="text-align: right;">-0.000</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">-3.287</td>
+<td style="text-align: right;">0.001</td>
+</tr>
+</tbody><tfoot>
+<tr class="odd">
+<td style="text-align: left; padding: 0;"><sup></sup> Standard errors: OLS</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="estimate-the-fixed-effects-model-add-in-the-fixed-effects-for-plot-year" class="level2">
+<h2 class="anchored" data-anchor-id="estimate-the-fixed-effects-model-add-in-the-fixed-effects-for-plot-year">Estimate the fixed effects model: Add in the fixed effects for <code>plot</code> &amp; <code>year</code></h2>
+<ul>
+<li><code>plot</code> fixed effects absorb all time-invariant differences across plots (e.g., baseline soil quality)</li>
+<li><code>year</code> fixed effects absorb common shocks shared by all plots in a given year (e.g., a region-wide drought year)</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>fe_lm <span class="ot">&lt;-</span> <span class="fu">lm</span>(perinc <span class="sc">~</span> vpd <span class="sc">+</span> <span class="fu">I</span>(vpd<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> dbh <span class="sc">+</span> density <span class="sc">+</span> plot <span class="sc">+</span> year,</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">data =</span> data_fe)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summ</span>(fe_lm, <span class="at">model.fit =</span> <span class="cn">FALSE</span>, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Observations</td>
+<td style="text-align: right;">294</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Dependent variable</td>
+<td style="text-align: right;">perinc</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Type</td>
+<td style="text-align: right;">OLS linear regression</td>
+</tr>
+</tbody>
+</table>
+</div>
+  
+<div class="table-responsive">
+<table class="table table-striped table-hover table-condensed caption-top table-sm small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th"></th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">Est.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">S.E.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">t val.</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">(Intercept)</td>
+<td style="text-align: right;">4.958</td>
+<td style="text-align: right;">1.413</td>
+<td style="text-align: right;">3.508</td>
+<td style="text-align: right;">0.001</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">vpd</td>
+<td style="text-align: right;">0.140</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">6.404</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">I(vpd^2)</td>
+<td style="text-align: right;">-0.005</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">-5.679</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">dbh</td>
+<td style="text-align: right;">-0.001</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">-2.175</td>
+<td style="text-align: right;">0.030</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">density</td>
+<td style="text-align: right;">-0.000</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">-3.151</td>
+<td style="text-align: right;">0.002</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">plot</td>
+<td style="text-align: right;">-0.000</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">-0.820</td>
+<td style="text-align: right;">0.413</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">year</td>
+<td style="text-align: right;">-0.003</td>
+<td style="text-align: right;">0.001</td>
+<td style="text-align: right;">-3.958</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+</tbody><tfoot>
+<tr class="odd">
+<td style="text-align: left; padding: 0;"><sup></sup> Standard errors: OLS</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+</tr>
+</tfoot>
+
+</table>
+</div>
+</div>
+</div>
+<section id="your-turn-3" class="level3">
+<h3 class="anchored" data-anchor-id="your-turn-3">✅ Your turn</h3>
+<p><strong>Q9.</strong> Compare the coefficient on <code>vpd</code> in the <code>no-FE model</code> vs the <code>FE model</code>. Did the estimate get larger, smaller, or change sign? What does that suggest about confounding from unobserved plot differences?</p>
+<p><em>Response:</em> The estimate gets slightly larger, which indicates that the confounds included do in fact have an effect on our model.</p>
+<p><strong>Q10.</strong> Why include <code>year</code> fixed effects? Give one concrete example of a “year shock” that could bias estimates if not controlled (choose a different example than provided above).</p>
+<p><em>Response:</em> Storm patterns can vary by year, and in higher storm years we could expect more of a disruption in both mpa and control</p>
+<p><strong>Q11.</strong> Why include <code>plot</code> fixed effects? Give one concrete example of a “time-invariant plot difference” that could bias estimates if not controlled (choose a different example than provided above).</p>
+<p><em>Response:</em> Plots can be placed near different vegetation which impact soil quality and nutrients.</p>
+<hr>
+<hr>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

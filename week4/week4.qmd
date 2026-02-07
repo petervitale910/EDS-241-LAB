@@ -9,9 +9,7 @@ format:
 date: "January 29, 2026"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-```
+
 
 
 ------------------------------------------------------------------------
