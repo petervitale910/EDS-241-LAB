@@ -77,7 +77,7 @@ Read in the simulated data
 #| echo: true
 
 
-sim_data <- read_csv(here("week5", "Simulated_Deforestation_Data6.csv"), show_col_types = FALSE)
+sim_data <- read_csv(here("week5", 'data', "Simulated_Deforestation_Data6.csv"), show_col_types = FALSE)
 ```
 
 
@@ -125,13 +125,34 @@ gt(variable_descriptions) %>%
 
 
 ```{r}
-
+data_binned <- sim_data %>% 
+  mutate(distance_bin = cut(distance, 
+                            breaks = seq(-20, 20, by = 1),
+                            include.lowest = TRUE)) %>% 
+  group_by(distance_bin, protected) %>% 
+  summarize(
+    avg_distance = mean(distance), # Averaged Binned distance
+    avg_deforest = mean(deforest),
+    .groups = "drop"
+  )
 ```
 
 
 ### 3. Plot using binned data 
 ```{r}
+rdd_lm <- ggplot(data_binned, 
+                 aes(x = avg_distance, y =avg_deforest, 
+                     color = as.factor(protected)))+
+  geom_point(alpha = .5)+
+  geom_smooth(method = 'lm', aes(group = protected))+
+  geom_vline(xintercept = 0, linetype = 'dashed', 
+             color = 'black')+
+  labs(title = "Regression Discontinuity Plot (Binned by Distance)",
+       x = "Running Variable (Distance)", y = "Deforestation Rate",
+       color = "Protected Area") +
+  theme_minimal()
 
+rdd_lm
 ```
 
 
@@ -142,11 +163,23 @@ Interpret the plot above. What are the two lines representing and what do their 
 What would it mean if there were NO discontinuity at distance = 0? How would that change your interpretation of protected area effectiveness?
 
 
-**RESPONSE**:
+**RESPONSE**: That would suck. 
 
 ### 4. Run RDD Analysis using OLS 
 ```{r}
+rdd_ols <- lm(
+  deforest ~ # outcome
+    protected + #treatment
+    distance + # running variable
+    protected*distance + # allows slope to vary
+    slope_cat + road_cat + water_cat + soil_cat, # Covariates
+  data = sim_data
+)
 
+# Display summary 
+summ(rdd_ols, digits = 3,
+     model.info = FALSE, 
+     model.fit = FALSE)
 ```
 
 
@@ -185,7 +218,17 @@ global_samp <- sim_data %>%
 
 ### 5. Estimate Global RDD
 ```{r}
+global_rdd <- rdrobust(
+  y = global_samp$deforest, # Outcome
+  x = global_samp$distance, # Running variable
+  covs = global_samp %>%  select(slope_cat, road_cat,
+                                 water_cat, soil_cat), # Controls
+  c = 0, # Cutoff at zero 
+  kernel = 'triangular'
+  )
 
+#print summary of results
+summary(global_rdd)
 ```
 
 
@@ -202,13 +245,23 @@ What advantages does this 'local polynomial regression' approach have over the s
 This plot presents the local polynomial regression curves fit on either side of the cutoff.
 
 ```{r}
+rdd_poly <- rdplot(
+  y = sim_data$deforest,
+  x = sim_data$distance,
+  c = 0,
+  binselect = 'es', # optimal evenly-spaced method using spacings estimators.
+  title = "Regression Discontinuity - Global Deforestation Rate",
+  x.label = "Distance to Protected Area Border (km)",
+  y.label = "Deforestation Rate"
+)
 
+rdd_poly
 ```
 
 Let's look at our results side by side. 
 
 ```{r}
-
+rdd_lm + rdd_poly$rdplot 
 ```
 
 
@@ -225,7 +278,25 @@ Compare the two plots. What key differences do you notice between the left plot 
 
 
 ```{r}
+run_country_rdd <- function(country_name) {
+  df_country <- sim_data %>% filter(country == country_name)
+  rdd_model <- rdrobust(
+  y = df_country$deforest, # Outcome
+  x = df_country$distance, # Running variable
+  covs = df_country %>%  select(slope_cat, road_cat,
+                                 water_cat, soil_cat), # Controls
+  c = 0, # Cutoff at zero,
+  p = 1,
+  kernel = 'triangular'
+  )
+}
 
+# Apply the function to all countries
+rdd_6country <- lapply(unique(sim_data$country),
+                       run_country_rdd)
+
+# Print summary for `DRC`
+summary(rdd_6country[[3]])
 ```
 
 ### 8. Generate county level discontinuity plots
@@ -257,8 +328,14 @@ for (country_name in unique(sim_data$country)) {
 
 ### 9. Print combined RDD Plots by country
 ```{r}
+final_plot <- wrap_plots(plot_list) +
+  plot_layout(ncol = 2) +
+  plot_annotation(
+    title = "Deforestation Rate",
+    caption = "Source: Simulation Data"
+  )
 
-
+final_plot
 ```
 
 
